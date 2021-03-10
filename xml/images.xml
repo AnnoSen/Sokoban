@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<list>
+    <hero>
+        <down_x>400</down_x>
+        <down_y>0</down_y>
+        <left_x>450</left_x>
+        <left_y>0</left_y>
+        <up_x>500</up_x>
+        <up_y>0</up_y>
+        <right_x>600</right_x>
+        <right_y>0</right_y>
+    </hero>
+    <wall>
+        <wall_x>0</wall_x>
+        <wall_y>0</wall_y>
+    </wall>
+    <box>
+        <box_x_0>80</box_x_0>
+        <box_y_0>0</box_y_0>
+        <box_x_1>160</box_x_1>
+        <box_y_1>0</box_y_1>
+    </box>
+    <track>
+        <track_x>240</track_x>
+        <track_y>0</track_y>
+    </track>
+    <bourn>
+        <bourn_x>320</bourn_x>
+        <bourn_y>0</bourn_y>
+    </bourn>
+</list>
