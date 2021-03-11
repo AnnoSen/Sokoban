@@ -6,26 +6,29 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class World extends JFrame {
-    private final int FRAME_WIDTH;
-    private final int FRAME_HEIGHT;
-    private final int IMAGE_WIDTH;
-    private final int IMAGE_HEIGHT;
-    private final List<Prop> list;
-    private final List<Prop> boxs;
-    private Prop hero;
-    private final int level;
-    {
-        FRAME_WIDTH =500;
-        FRAME_HEIGHT=500;
+    private static final int FRAME_WIDTH;
+    private static final int FRAME_HEIGHT;
+    private static final int IMAGE_WIDTH;
+    private static final int IMAGE_HEIGHT;
+    private static final List<Wall> walls;
+    private static final List<Bourn> bourns;
+    private static final List<Box> boxs;
+    private static final List<Track> tracks;
+    private static Hero hero;
+    private static final int level;
+    static {
+        FRAME_WIDTH = 500;
+        FRAME_HEIGHT = 500;
         IMAGE_WIDTH = 30;
         IMAGE_HEIGHT = 30;
-        list = new ArrayList<>();
-        boxs =new ArrayList<>();
-        level=0;
+        walls = new ArrayList<>();
+        bourns = new ArrayList<>();
+        boxs = new ArrayList<>();
+        tracks = new ArrayList<>();
+        level=1;
+        start();
     }
     /**
      * 初始化窗口
@@ -41,7 +44,7 @@ public class World extends JFrame {
     /**
      * 初始化所有需要显示的对象
      */
-    private void start(){
+    private static void start(){
         for(int i=0;i<Level.level[level].length;i++){
             for(int j=0;j<Level.level[level][i].length;j++){
                 switch (Level.level[level][i][j]){
@@ -52,14 +55,12 @@ public class World extends JFrame {
                         create(new Bourn(),j,i);
                         break;
                     case 3:
-                        create(new Track(),j,i);
                         create(new Box(),j,i);
                         break;
                     case 4:
                         create(new Track(),j,i);
                         break;
                     case 5:
-                        create(new Track(),j,i);
                         create(new Hero(),j,i);
                        break;
                     default:
@@ -68,19 +69,25 @@ public class World extends JFrame {
             }
         }
     }
-    private void create(Prop prop,int j,int i){
+    private static void create(Prop prop,int j,int i){
         prop.dx1=j*IMAGE_WIDTH;
         prop.dy1=i*IMAGE_HEIGHT;
         prop.dx2=prop.dx1+IMAGE_WIDTH;
         prop.dy2=prop.dy1+IMAGE_HEIGHT;
-        if(prop instanceof Wall||prop instanceof Track||prop instanceof Bourn){
-            list.add(prop);
+        if(prop instanceof Wall){
+            walls.add((Wall) prop);
         }
-        if(prop instanceof Hero){
-            hero = prop;
+        if(prop instanceof Bourn){
+            bourns.add((Bourn) prop);
         }
         if(prop instanceof Box){
-            boxs.add(prop);
+            boxs.add((Box) prop);
+        }
+        if(prop instanceof Track){
+            tracks.add((Track) prop);
+        }
+        if(prop instanceof Hero){
+            hero = (Hero) prop;
         }
     }
 
@@ -111,107 +118,323 @@ public class World extends JFrame {
 
     private void moveUp(){
         boolean b = true;
-        for(Prop prop:list){
-            if (prop instanceof Wall && prop.dx1 == hero.dx1 && prop.dy1 == hero.dy1 - IMAGE_HEIGHT) {//人物前面一格是墙
+        //人物的前一格是墙,b=false
+        for(Wall wall:walls){
+            if(wall.dx1==hero.dx1&&wall.dy1==hero.dy1-IMAGE_HEIGHT){
                 b = false;
                 break;
             }
         }
+        //人物的前一格是路,角色移动后return;
         if(b){
-            for(Prop prop:list) {
-                if (prop instanceof Track && prop.dx1 == hero.dx1 && prop.dy1 == hero.dy1 - IMAGE_HEIGHT) {//人物前面一格是路
-                    hero.dy1 = hero.dy1 - IMAGE_HEIGHT;
-                    hero.dy2 = hero.dy2 - IMAGE_HEIGHT;
+            for(Track track:tracks){
+                if(track.dx1==hero.dx1&&track.dy1==hero.dy1-IMAGE_HEIGHT){
+                    //角色前移，地板后移
+                    hero.dy1 = hero.dy1-IMAGE_HEIGHT;
+                    hero.dy2 = hero.dy2-IMAGE_HEIGHT;
+                    track.dy1 = track.dy1+IMAGE_HEIGHT;
+                    track.dy2 = track.dy2+IMAGE_HEIGHT;
+                    return;
+                }
+            }
+        }
+        //人物的前一格箱子,b=true;
+        Box box = null;
+        if(b){
+            boolean b1 = false;
+            for(Box box1:boxs){
+                if (box1.dx1 == hero.dx1 && box1.dy1 == hero.dy1-IMAGE_HEIGHT) {
+                    box = box1;
+                    b1 = true;
                     break;
-                } else {//人物前一格不是路
-                    for (Prop box : boxs) {
-                        if (box.dx1 == hero.dx1 && box.dy1 == hero.dy1 - IMAGE_HEIGHT) {//人物的前面一个是箱子
-                            for (Prop p : list) {
-                                if (p instanceof Track || p instanceof Bourn && p.dx1 == box.dx1 && p.dy1 == box.dy1 - IMAGE_HEIGHT) {//箱子的前一格是路或终点
-                                    hero.dy1 = hero.dy1 - IMAGE_HEIGHT;
-                                    hero.dy2 = hero.dy2 - IMAGE_HEIGHT;
-                                    box.dy1 = box.dy1 - IMAGE_HEIGHT;
-                                    box.dy2 = box.dy2 - IMAGE_HEIGHT;
-                                    return;
-                                }else  if(p instanceof Wall && p.dx1 == box.dx1 && p.dy1 == box.dy1 - IMAGE_HEIGHT){//如果箱子前面一格是墙则退出
-                                    return;
-                                }
-                            }
-                        }
-                    }
+                }
+            }
+            b = b1;
+        }
+        //箱子的前一个是箱子,b=false
+        if(b){
+            boolean b1 = true;
+            for(Box box1:boxs){
+                if (box != box1 && box1.dx1 == box.dx1 && box1.dy1 == box.dy1 - IMAGE_HEIGHT) {
+                    b1 = false;
+                    break;
+                }
+            }
+            b = b1;
+        }
+        //箱子的前一格是墙,b=false
+        if(b){
+            boolean b1 = true;
+            for(Wall wall:walls){
+                if (wall.dx1 == box.dx1 && wall.dy1 == box.dy1 - IMAGE_HEIGHT) {
+                    b1 = false;
+                    break;
+                }
+            }
+            b = b1;
+        }
+        //b=true时,角色移动,箱子移动
+        if(b){
+            //删除原位置的路，在人物的位置添加路
+            Track track = new Track();
+            track.dx1=hero.dx1;
+            track.dy1=hero.dy1;
+            track.dx2=hero.dx2;
+            track.dy2=hero.dy2;
+            tracks.add(track);
+
+            hero.dy1 = hero.dy1-IMAGE_HEIGHT;
+            hero.dy2 = hero.dy2-IMAGE_HEIGHT;
+            box.dy1 = box.dy1-IMAGE_HEIGHT;
+            box.dy2 = box.dy2-IMAGE_HEIGHT;
+
+            //删除箱子位置的路
+            for(Track track1:tracks){
+                if(track1.dx1==box.dx1&&track1.dy1==box.dy1){
+                    tracks.remove(track1);
+                    break;
                 }
             }
         }
     }
     private void moveDown(){
         boolean b = true;
-        for(Prop prop:list){
-            if (prop instanceof Wall && prop.dx1 == hero.dx1 && prop.dy1 == hero.dy1 + IMAGE_HEIGHT) {//人物前面一格是墙
+        //人物的前一格是墙,b=false
+        for(Wall wall:walls){
+            if(wall.dx1==hero.dx1&&wall.dy1==hero.dy1+IMAGE_HEIGHT){
                 b = false;
                 break;
             }
         }
+        //人物的前一格是路,角色移动后return;
         if(b){
-            for(Prop prop:list) {
-                if (prop instanceof Track && prop.dx1 == hero.dx1 && prop.dy1 == hero.dy1 + IMAGE_HEIGHT) {//人物前面一格是路
-                    hero.dy1 = hero.dy1 + IMAGE_HEIGHT;
-                    hero.dy2 = hero.dy2 + IMAGE_HEIGHT;
+            for(Track track:tracks){
+                if(track.dx1==hero.dx1&&track.dy1==hero.dy1+IMAGE_HEIGHT){
+                    //角色前移，地板后移
+                    hero.dy1 = hero.dy1+IMAGE_HEIGHT;
+                    hero.dy2 = hero.dy2+IMAGE_HEIGHT;
+                    track.dy1 = track.dy1-IMAGE_HEIGHT;
+                    track.dy2 = track.dy2-IMAGE_HEIGHT;
+                    return;
+                }
+            }
+        }
+        //人物的前一格箱子,b=true;
+        Box box = null;
+        if(b){
+            boolean b1 = false;
+            for(Box box1:boxs){
+                if (box1.dx1 == hero.dx1 && box1.dy1 == hero.dy1+IMAGE_HEIGHT) {
+                    box = box1;
+                    b1 = true;
                     break;
-                } else {//人物前一格不是路
-                    for (Prop box : boxs) {
-                        if (box.dx1 == hero.dx1 && box.dy1 == hero.dy1 + IMAGE_HEIGHT) {//人物的前面一个是箱子
-                            for (Prop p : list) {
-                                if (p instanceof Track || p instanceof Bourn && p.dx1 == box.dx1 && p.dy1 == box.dy1 + IMAGE_HEIGHT) {//箱子的前一格是路或终点
-                                    hero.dy1 = hero.dy1 + IMAGE_HEIGHT;
-                                    hero.dy2 = hero.dy2 + IMAGE_HEIGHT;
-                                    box.dy1 = box.dy1 + IMAGE_HEIGHT;
-                                    box.dy2 = box.dy2 + IMAGE_HEIGHT;
-                                    return;
-                                }else  if(p instanceof Wall && p.dx1 == box.dx1 && p.dy1 == box.dy1 + IMAGE_HEIGHT){//如果箱子前面一格是墙则退出
-                                    System.out.println("...");
-                                    return;
-                                }
-                            }
-                        }
-                    }
+                }
+            }
+            b = b1;
+        }
+        //箱子的前一个是箱子,b=false
+        if(b){
+            boolean b1 = true;
+            for(Box box1:boxs){
+                if (box != box1 && box1.dx1 == box.dx1 && box1.dy1 == box.dy1 + IMAGE_HEIGHT) {
+                    b1 = false;
+                    break;
+                }
+            }
+            b = b1;
+        }
+        //箱子的前一格是墙,b=false
+        if(b){
+            boolean b1 = true;
+            for(Wall wall:walls){
+                if (wall.dx1 == box.dx1 && wall.dy1 == box.dy1 + IMAGE_HEIGHT) {
+                    b1 = false;
+                    break;
+                }
+            }
+            b = b1;
+        }
+        //b=true时,角色移动,箱子移动
+        if(b){
+            //删除原位置的路，在人物的位置添加路
+            Track track = new Track();
+            track.dx1=hero.dx1;
+            track.dy1=hero.dy1;
+            track.dx2=hero.dx2;
+            track.dy2=hero.dy2;
+            tracks.add(track);
+
+            hero.dy1 = hero.dy1+IMAGE_HEIGHT;
+            hero.dy2 = hero.dy2+IMAGE_HEIGHT;
+            box.dy1 = box.dy1+IMAGE_HEIGHT;
+            box.dy2 = box.dy2+IMAGE_HEIGHT;
+            //删除箱子位置的路
+            for(Track track1:tracks){
+                if(track1.dx1==box.dx1&&track1.dy1==box.dy1){
+                    tracks.remove(track1);
+                    break;
                 }
             }
         }
     }
     private void moveLeft(){
         boolean b = true;
-        for(Prop prop:list){
-            if(prop instanceof Wall&&prop.dx1+IMAGE_WIDTH==hero.dx1&&prop.dy1==hero.dy1){
-                b=false;
+        //人物的前一格是墙,b=false
+        for(Wall wall:walls){
+            if(wall.dx1==hero.dx1-IMAGE_WIDTH&&wall.dy1==hero.dy1){
+                b = false;
+                break;
             }
         }
+        //人物的前一格是路,角色移动后return;
         if(b){
+            for(Track track:tracks){
+                if(track.dx1==hero.dx1-IMAGE_WIDTH&&track.dy1==hero.dy1){
+                    //角色前移，地板后移
+                    hero.dx1 = hero.dx1-IMAGE_WIDTH;
+                    hero.dx2 = hero.dx2-IMAGE_WIDTH;
+                    track.dx1 = track.dx1+IMAGE_WIDTH;
+                    track.dx2 = track.dx2+IMAGE_WIDTH;
+                    return;
+                }
+            }
+        }
+        //人物的前一格箱子,b=true;
+        Box box = null;
+        if(b){
+            boolean b1 = false;
+            for(Box box1:boxs){
+                if (box1.dx1 == hero.dx1-IMAGE_WIDTH && box1.dy1 == hero.dy1) {
+                    box = box1;
+                    b1 = true;
+                    break;
+                }
+            }
+            b = b1;
+        }
+        //箱子的前一个是箱子,b=false
+        if(b){
+            boolean b1 = true;
+            for(Box box1:boxs){
+                if (box != box1 && box1.dx1 == box.dx1-IMAGE_WIDTH && box1.dy1 == box.dy1) {
+                    b1 = false;
+                    break;
+                }
+            }
+            b = b1;
+        }
+        //箱子的前一格是墙,b=false
+        if(b){
+            boolean b1 = true;
+            for(Wall wall:walls){
+                if (wall.dx1 == box.dx1-IMAGE_WIDTH && wall.dy1 == box.dy1) {
+                    b1 = false;
+                    break;
+                }
+            }
+            b = b1;
+        }
+        //b=true时,角色移动,箱子移动
+        if(b){
+            //删除原位置的路，在人物的位置添加路
+            Track track = new Track();
+            track.dx1=hero.dx1;
+            track.dy1=hero.dy1;
+            track.dx2=hero.dx2;
+            track.dy2=hero.dy2;
+            tracks.add(track);
+
             hero.dx1 = hero.dx1-IMAGE_WIDTH;
             hero.dx2 = hero.dx2-IMAGE_WIDTH;
-            boxs.forEach((box)->{
-                if(box.dx1==hero.dx1&&box.dy1 == hero.dy1){
-                    box.dx1 = box.dx1-IMAGE_HEIGHT;
-                    box.dx2 = box.dx2-IMAGE_HEIGHT;
+            box.dx1 = box.dx1-IMAGE_WIDTH;
+            box.dx2 = box.dx2-IMAGE_WIDTH;
+            //删除箱子位置的路
+            for(Track track1:tracks){
+                if(track1.dx1==box.dx1&&track1.dy1==box.dy1){
+                    tracks.remove(track1);
+                    break;
                 }
-            });
+            }
         }
     }
     private void moveRight(){
         boolean b = true;
-        for(Prop prop:list){
-            if(prop instanceof Wall&&prop.dx1-IMAGE_WIDTH==hero.dx1&&prop.dy1==hero.dy1){
-                b=false;
+        //人物的前一格是墙,b=false
+        for(Wall wall:walls){
+            if(wall.dx1==hero.dx1+IMAGE_WIDTH&&wall.dy1==hero.dy1){
+                b = false;
+                break;
             }
         }
+        //人物的前一格是路,角色移动后return;
         if(b){
+            for(Track track:tracks){
+                if(track.dx1==hero.dx1+IMAGE_WIDTH&&track.dy1==hero.dy1){
+                    //角色前移，地板后移
+                    hero.dx1 = hero.dx1+IMAGE_WIDTH;
+                    hero.dx2 = hero.dx2+IMAGE_WIDTH;
+                    track.dx1 = track.dx1-IMAGE_WIDTH;
+                    track.dx2 = track.dx2-IMAGE_WIDTH;
+                    return;
+                }
+            }
+        }
+        //人物的前一格箱子,b=true;
+        Box box = null;
+        if(b){
+            boolean b1 = false;
+            for(Box box1:boxs){
+                if (box1.dx1 == hero.dx1+IMAGE_WIDTH && box1.dy1 == hero.dy1) {
+                    box = box1;
+                    b1 = true;
+                    break;
+                }
+            }
+            b = b1;
+        }
+        //箱子的前一个是箱子,b=false
+        if(b){
+            boolean b1 = true;
+            for(Box box1:boxs){
+                if (box != box1 && box1.dx1 == box.dx1+IMAGE_WIDTH && box1.dy1 == box.dy1) {
+                    b1 = false;
+                    break;
+                }
+            }
+            b = b1;
+        }
+        //箱子的前一格是墙,b=false
+        if(b){
+            boolean b1 = true;
+            for(Wall wall:walls){
+                if (wall.dx1 == box.dx1+IMAGE_WIDTH && wall.dy1 == box.dy1) {
+                    b1 = false;
+                    break;
+                }
+            }
+            b = b1;
+        }
+        //b=true时,角色移动,箱子移动
+        if(b){
+            //删除原位置的路，在人物的位置添加路
+            Track track = new Track();
+            track.dx1=hero.dx1;
+            track.dy1=hero.dy1;
+            track.dx2=hero.dx2;
+            track.dy2=hero.dy2;
+            tracks.add(track);
+
             hero.dx1 = hero.dx1+IMAGE_WIDTH;
             hero.dx2 = hero.dx2+IMAGE_WIDTH;
-            boxs.forEach((box)->{
-                if(box.dx1==hero.dx1&&box.dy1 == hero.dy1){
-                    box.dx1 = box.dx1+IMAGE_HEIGHT;
-                    box.dx2 = box.dx2+IMAGE_HEIGHT;
+            box.dx1 = box.dx1+IMAGE_WIDTH;
+            box.dx2 = box.dx2+IMAGE_WIDTH;
+            //删除箱子位置的路
+            for(Track track1:tracks){
+                if(track1.dx1==box.dx1&&track1.dy1==box.dy1){
+                    tracks.remove(track1);
+                    break;
                 }
-            });
+            }
         }
     }
 
@@ -219,7 +442,6 @@ public class World extends JFrame {
      * 启动
      */
     private void action(){
-        start();
         repaint();
         keyListener();
     }
@@ -228,13 +450,11 @@ public class World extends JFrame {
      * 绘制图像
      */
     public void paint(Graphics g){
-        list.forEach((prop)-> prop.paint(g));
-        if(hero!=null){
-            hero.paint(g);
-        }
-        if(boxs.size()>0){
-            boxs.forEach((box)-> box.paint(g));
-        }
+        walls.forEach(prop -> prop.paint(g));
+        bourns.forEach(prop ->prop.paint(g));
+        boxs.forEach(prop ->prop.paint(g));
+        tracks.forEach(prop ->prop.paint(g));
+        hero.paint(g);
     }
 
     public static void main(String[] args) {
