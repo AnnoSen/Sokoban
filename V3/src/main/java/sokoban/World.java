@@ -7,7 +7,8 @@ import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-public class World extends JFrame {
+public class World extends JPanel {
+    private final JFrame jf = new JFrame();
     private static final int FRAME_WIDTH;
     private static final int FRAME_HEIGHT;
     private static final int IMAGE_WIDTH;
@@ -27,18 +28,19 @@ public class World extends JFrame {
         bourns = new ArrayList<>();
         boxs = new ArrayList<>();
         tracks = new ArrayList<>();
-        level=1;
+        level=0;
         start();
     }
     /**
      * 初始化窗口
      */
     public World(){
-        setTitle("推箱子");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(FRAME_WIDTH, FRAME_HEIGHT);
-        setLocationRelativeTo(null);
-        setVisible(true);
+        jf.add(this);
+        jf.setTitle("推箱子");
+        jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        jf.setSize(FRAME_WIDTH, FRAME_HEIGHT);
+        jf.setLocationRelativeTo(null);
+        jf.setVisible(true);
     }
 
     /**
@@ -93,6 +95,7 @@ public class World extends JFrame {
 
     /**
      * 键盘监听
+     * 继承JPanel时，键盘监听需要添加到JFrame中，不能添加到this中
      */
     private void keyListener(){
         KeyAdapter key = new KeyAdapter() {
@@ -113,9 +116,13 @@ public class World extends JFrame {
                 repaint();
             }
         };
-        this.addKeyListener(key);
+        jf.addKeyListener(key);
     }
 
+    /**
+     * 人物移动：箱子可以移动，true或人物的前一格不是墙，true
+     * 箱子移动：人物的前两格不是箱子，true&&人物的前两格不是墙，true
+     */
     private void moveUp(){
         boolean b = true;
         //人物的前一格是墙,b=false
@@ -442,19 +449,34 @@ public class World extends JFrame {
      * 启动
      */
     private void action(){
-        repaint();
         keyListener();
     }
 
     /**
      * 绘制图像
+     * 重写paintComponent()绘制背景
+     */
+    public void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        walls.forEach(prop -> prop.paint(g));
+        tracks.forEach(prop ->prop.paint(g));
+        bourns.forEach(prop ->prop.paint(g));
+    }
+
+    /**
+     * 重写paint()绘制移动的组件
      */
     public void paint(Graphics g){
-        walls.forEach(prop -> prop.paint(g));
-        bourns.forEach(prop ->prop.paint(g));
+        super.paint(g);//调用父类的paint()，不然无法加载重写的paintComponent()
         boxs.forEach(prop ->prop.paint(g));
-        tracks.forEach(prop ->prop.paint(g));
         hero.paint(g);
+    }
+
+    /**
+     * 重写update()，当调用repaint()重绘时不刷新背景图
+     */
+    public void update(Graphics g){
+        paint(g);
     }
 
     public static void main(String[] args) {
