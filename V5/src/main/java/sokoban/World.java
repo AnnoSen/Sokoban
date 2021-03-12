@@ -101,6 +101,7 @@ public class World extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 ParseObj po = new ParseObj();
+                hero.setLevel(level);
                 po.write(props);
                 System.out.println("已保存！");
             }
@@ -300,7 +301,6 @@ public class World extends JPanel {
         }else if(level>=Level.level.length){
             level = 0;
         }
-        hero.setLevel(level);
         pass = false;
         bournNumber=0;
         props = new ArrayList<>();

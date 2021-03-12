@@ -1,6 +1,8 @@
 package sokoban;
 
-public class Hero extends Prop {
+import java.io.Serializable;
+
+public class Hero extends Prop implements Serializable{
     private int level;
     public Hero() {
         width=50;
