@@ -24,7 +24,7 @@ paint()是基础，paint中会调用 paintComponent(), paintBorder(), paintChild
 这三个方法一个是绘制背景，一个绘制边框，一个绘制子控件。
 一般重写背景，是建议重写paintComponent()的。
 ===================================================================================================================================
-1、通过继承JPanl并重写paintComponent()、paint()、update()方法，解决v2中同一位置出现重叠图片导致闪烁的问题
+1、通过继承JPanel并重写paintComponent()、paint()、update()方法，解决v2中同一位置出现重叠图片导致闪烁的问题
     paintComponent():通过重写该方法设置背景图
     paint():通过重写该方法加载移动组件，注意：当重写paintComponent()后，paint()方法中一定调用super.paint()，不然无法加载背景图
     update():通过重写该方法定义刷新规则
