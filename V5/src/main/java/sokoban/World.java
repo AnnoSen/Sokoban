@@ -5,7 +5,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -92,6 +91,7 @@ public class World extends JPanel {
                 for(Prop prop:props){
                     if(prop instanceof Hero){
                         hero = (Hero) prop;
+                        level = hero.getLevel();
                     }
                 }
                 repaint();
@@ -102,6 +102,7 @@ public class World extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 ParseObj po = new ParseObj();
                 po.write(props);
+                System.out.println("已保存！");
             }
         });
     }
@@ -299,6 +300,7 @@ public class World extends JPanel {
         }else if(level>=Level.level.length){
             level = 0;
         }
+        hero.setLevel(level);
         pass = false;
         bournNumber=0;
         props = new ArrayList<>();
