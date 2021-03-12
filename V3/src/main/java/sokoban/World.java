@@ -28,7 +28,7 @@ public class World extends JPanel {
         bourns = new ArrayList<>();
         boxs = new ArrayList<>();
         tracks = new ArrayList<>();
-        level=0;
+        level=1;
         start();
     }
     /**

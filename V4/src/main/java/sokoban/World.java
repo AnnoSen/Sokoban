@@ -2,34 +2,45 @@ package sokoban;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-public class World extends JPanel {
+/**
+ * Jpanel是容器，JFrame是窗口
+ * Jpanel容器里放需要绘制的的内容,并添加到JFrame窗口中，且相比java.awt.Panel于javax.swing.Jpanel提供画布功能
+ * 虽然JFrame也可以绘制内容，
+ */
+public class World extends JPanel{
     private final JFrame jf = new JFrame();
     private final int FRAME_WIDTH;
     private final int FRAME_HEIGHT;
     private final int IMAGE_WIDTH;
     private final int IMAGE_HEIGHT;
-    private final List<Prop> props;
+    private List<Prop> props;
     private Hero hero;
-    private final int level;
+    private int level;
+    private int bournNumber;//在加载时确定箱子的数量，便于通关时的判断
+    private boolean pass=false;
      {
-        FRAME_WIDTH = 500;
-        FRAME_HEIGHT = 500;
-        IMAGE_WIDTH = 30;
-        IMAGE_HEIGHT = 30;
-        props = new ArrayList<>();
-        level=1;
-        start();//放在构造块中，在创建窗口之前初始化资源，如果放在其他方法中需要初始化资源后repaint()
+         FRAME_WIDTH = 500;
+         FRAME_HEIGHT = 500;
+         IMAGE_WIDTH = 30;
+         IMAGE_HEIGHT = 30;
+         props = new ArrayList<>();
+         level=0;
+         //在创建窗口之前初始化资源
+         start();
+         button();
     }
+
     /**
      * 初始化窗口
      */
     private World(){
-        jf.add(this);
+        jf.add(this);//将存放资源的容器添加到窗口中
         jf.setTitle("推箱子");
         jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         jf.setSize(FRAME_WIDTH, FRAME_HEIGHT);
@@ -38,13 +49,40 @@ public class World extends JPanel {
     }
 
     /**
+     * 将按钮添加到Jpanel容器中，而不能添加到窗口中，否则会出现无法显示的问题
+     * 需要注意的是添加按钮时需要清空默认布局：setLayout(null);
+     */
+    private void button(){
+        JButton last = new JButton("上一关");
+        JButton next = new JButton("下一关");
+        last.setBounds(130,420,100,30);
+        next.setBounds(250,420,100,30);
+        this.add(last);
+        this.add(next);
+        this.setLayout(null);
+        this.setVisible(true);
+        last.setFocusable(false);//使按钮失去焦点，否则键盘监控会失效
+        next.setFocusable(false);
+        last.addActionListener(new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                next(-1);
+            }
+        });
+        next.addActionListener(new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                next(1);
+            }
+        });
+    }
+    /**
      * 初始化所有需要显示的对象
      */
     private void start(){
-        Level l = new Level();
-        for(int i=0;i<l.level[level].length;i++){
-            for(int j=0;j<l.level[level][i].length;j++){
-                switch (l.level[level][i][j]){
+        for(int i=0;i<Level.level[level].length;i++){
+            for(int j=0;j<Level.level[level][i].length;j++){
+                switch (Level.level[level][i][j]){
                     case 1:
                         create(new Wall(),j,i);
                         break;
@@ -77,6 +115,114 @@ public class World extends JPanel {
         if(prop instanceof Hero){
             hero = (Hero) prop;
         }
+        if(prop instanceof Bourn){
+            bournNumber++;
+        }
+    }
+
+    /**
+     * 人物前一格的对象，不包括路径、终点、人物
+     */
+    private Prop getProp1(int next1_x,int next1_y){
+        for(Prop prop:props) {
+            if ((prop instanceof Wall||prop instanceof Box)&&(prop.dx1 == next1_x && prop.dy1 == next1_y)) {
+                return prop;
+            }
+        }
+        return null;
+    }
+    /**
+     * 人物前两格的对象，不包括路径、终点、人物
+     */
+    private Prop getProp2(int next2_x,int next2_y){
+        for(Prop prop:props) {
+            if ((prop instanceof Wall||prop instanceof Box)&&(prop.dx1 == next2_x && prop.dy1 == next2_y)) {
+                return prop;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * y方向移动
+     */
+    private void moveY(int number){
+        int next1_x = hero.dx1;
+        int next1_y = hero.dy1+number;
+        int next2_x = hero.dx1;
+        int next2_y = hero.dy1+number*2;
+        Prop prop1 = getProp1(next1_x,next1_y);
+        if(prop1==null){//前一格没有障碍物，直接移动
+            hero.dy1 = hero.dy1+number;
+            hero.dy2 = hero.dy2+number;
+        }else if(prop1 instanceof Box){
+            Prop prop2 = getProp2(next2_x,next2_y);
+            if(prop2==null){//前两格没有障碍物，可以移动
+                hero.dy1 = hero.dy1+number;
+                hero.dy2 = hero.dy2+number;
+                prop1.dy1 = prop1.dy1+number;
+                prop1.dy2 = prop1.dy2+number;
+            }
+        }
+    }
+
+    /**
+     * x方向移动
+     */
+    private void moveX(int number){
+        int next1_x = hero.dx1+number;
+        int next1_y = hero.dy1;
+        int next2_x = hero.dx1+number*2;
+        int next2_y = hero.dy1;
+        Prop prop1 = getProp1(next1_x,next1_y);
+        if(prop1==null){
+            //前一格没有障碍物，直接移动
+            hero.dx1 = hero.dx1+number;
+            hero.dx2 = hero.dx2+number;
+        }else if(prop1 instanceof Box){
+            Prop prop2 = getProp2(next2_x,next2_y);
+            if(prop2==null){
+                //前两格没有障碍物，可以移动
+                hero.dx1 = hero.dx1+number;
+                hero.dx2 = hero.dx2+number;
+                prop1.dx1 = prop1.dx1+number;
+                prop1.dx2 = prop1.dx2+number;
+            }
+        }
+    }
+
+    private void moveUp(){
+        moveY(-IMAGE_HEIGHT);
+    }
+    private void moveDown(){
+        moveY(IMAGE_HEIGHT);
+    }
+    private void moveLeft(){
+        moveX(-IMAGE_WIDTH);
+    }
+    private void moveRight(){
+        moveX(IMAGE_WIDTH);
+    }
+
+    /**
+     * 通关，判断与箱子重合的是终点吗，如果不是为false
+     */
+    private void pass(){
+        int bournNumber = 0;
+        for(Prop prop1:props){
+            if(prop1 instanceof Bourn){
+                for(Prop prop2:props){
+                    //如果目的地与箱子重合boxNumber++;
+                    if(prop1.dx1==prop2.dx1&&prop1.dy1==prop2.dy1&&prop2 instanceof Box){
+                        bournNumber++;
+                    }
+                }
+            }
+        }
+        //当重合的数量与初始化时目的地的数量相同，则通关
+        if(bournNumber==this.bournNumber){
+            pass = true;
+        }
     }
 
     /**
@@ -100,119 +246,10 @@ public class World extends JPanel {
                     moveRight();
                 }
                 repaint();
+                pass();
             }
         };
         jf.addKeyListener(key);
-    }
-    /**
-     *人物前面一格的对象，不包括路径、终点、人物
-     */
-    private Prop getProp1(int next1_x,int next1_y){
-        for(Prop prop:props) {
-            if ((prop instanceof Wall||prop instanceof Box)&&(prop.dx1 == next1_x && prop.dy1 == next1_y)) {
-                return prop;
-            }
-        }
-        return null;
-    }
-    /**
-     * 人物前两格的对象，不包括路径、终点、人物
-     */
-    private Prop getProp2(int next2_x,int next2_y){
-        for(Prop prop:props) {
-            if ((prop instanceof Wall||prop instanceof Box)&&(prop.dx1 == next2_x && prop.dy1 == next2_y)) {
-                return prop;
-            }
-        }
-        return null;
-    }
-    /**
-     * 人物移动：是箱子可以移动，true或人物的前一格不是墙，true
-     * 箱子移动：人物的前两格不是箱子，true&&人物的前两格不是墙，true
-     */
-    private void moveUp(){
-        int next1_x = hero.dx1;
-        int next1_y = hero.dy1-IMAGE_HEIGHT;
-        int next2_x = hero.dx1;
-        int next2_y = hero.dy1-2*IMAGE_HEIGHT;
-        Prop prop1 = getProp1(next1_x,next1_y);
-        if(prop1==null){
-            //前一格没有障碍物，直接移动
-            hero.dy1 = hero.dy1-IMAGE_HEIGHT;
-            hero.dy2 = hero.dy2-IMAGE_HEIGHT;
-        }else if(prop1 instanceof Box){
-            Prop prop2 = getProp2(next2_x,next2_y);
-            if(prop2==null){
-                //前两格没有障碍物，可以移动
-                hero.dy1 = hero.dy1-IMAGE_HEIGHT;
-                hero.dy2 = hero.dy2-IMAGE_HEIGHT;
-                prop1.dy1 = prop1.dy1-IMAGE_HEIGHT;
-                prop1.dy2 = prop1.dy2-IMAGE_HEIGHT;
-            }
-        }
-    }
-    private void moveDown(){
-        int next1_x = hero.dx1;
-        int next1_y = hero.dy1+IMAGE_HEIGHT;
-        int next2_x = hero.dx1;
-        int next2_y = hero.dy1+2*IMAGE_HEIGHT;
-        Prop prop1 = getProp1(next1_x,next1_y);
-        if(prop1==null){
-            //前一格没有障碍物，直接移动
-            hero.dy1 = hero.dy1+IMAGE_HEIGHT;
-            hero.dy2 = hero.dy2+IMAGE_HEIGHT;
-        }else if(prop1 instanceof Box){
-            Prop prop2 = getProp2(next2_x,next2_y);
-            if(prop2==null){
-                //前两格没有障碍物，可以移动
-                hero.dy1 = hero.dy1+IMAGE_HEIGHT;
-                hero.dy2 = hero.dy2+IMAGE_HEIGHT;
-                prop1.dy1 = prop1.dy1+IMAGE_HEIGHT;
-                prop1.dy2 = prop1.dy2+IMAGE_HEIGHT;
-            }
-        }
-    }
-    private void moveLeft(){
-        int next1_x = hero.dx1-IMAGE_HEIGHT;
-        int next1_y = hero.dy1;
-        int next2_x = hero.dx1-2*IMAGE_HEIGHT;
-        int next2_y = hero.dy1;
-        Prop prop1 = getProp1(next1_x,next1_y);
-        if(prop1==null){
-            //前一格没有障碍物，直接移动
-            hero.dx1 = hero.dx1-IMAGE_HEIGHT;
-            hero.dx2 = hero.dx2-IMAGE_HEIGHT;
-        }else if(prop1 instanceof Box){
-            Prop prop2 = getProp2(next2_x,next2_y);
-            if(prop2==null){
-                //前两格没有障碍物，可以移动
-                hero.dx1 = hero.dx1-IMAGE_HEIGHT;
-                hero.dx2 = hero.dx2-IMAGE_HEIGHT;
-                prop1.dx1 = prop1.dx1-IMAGE_HEIGHT;
-                prop1.dx2 = prop1.dx2-IMAGE_HEIGHT;
-            }
-        }
-    }
-    private void moveRight(){
-        int next1_x = hero.dx1+IMAGE_HEIGHT;
-        int next1_y = hero.dy1;
-        int next2_x = hero.dx1+2*IMAGE_HEIGHT;
-        int next2_y = hero.dy1;
-        Prop prop1 = getProp1(next1_x,next1_y);
-        if(prop1==null){
-            //前一格没有障碍物，直接移动
-            hero.dx1 = hero.dx1+IMAGE_HEIGHT;
-            hero.dx2 = hero.dx2+IMAGE_HEIGHT;
-        }else if(prop1 instanceof Box){
-            Prop prop2 = getProp2(next2_x,next2_y);
-            if(prop2==null){
-                //前两格没有障碍物，可以移动
-                hero.dx1 = hero.dx1+IMAGE_HEIGHT;
-                hero.dx2 = hero.dx2+IMAGE_HEIGHT;
-                prop1.dx1 = prop1.dx1+IMAGE_HEIGHT;
-                prop1.dx2 = prop1.dx2+IMAGE_HEIGHT;
-            }
-        }
     }
 
     /**
@@ -222,6 +259,23 @@ public class World extends JPanel {
         keyListener();
     }
 
+    /**
+     * 下一关
+     */
+    private void next(int next){
+        level+=next;
+        //小于零跳转到最后一关，大于最大关卡回到第一关
+        if(level<0){
+            level = Level.level.length-1;
+        }else if(level>=Level.level.length){
+            level = 0;
+        }
+        pass = false;
+        bournNumber=0;
+        props = new ArrayList<>();
+        start();
+        repaint();
+    }
     /**
      * 绘制图像
      * 重写paintComponent()绘制背景
@@ -244,6 +298,12 @@ public class World extends JPanel {
             if(prop instanceof Box||prop instanceof Hero){
                 prop.paint(g);
             }
+        }
+        if(pass){
+            g.setFont(new Font(null, Font.BOLD,20));
+            g.setColor(Color.RED);;
+            g.drawString("恭喜通关",190,50);
+            next(1);
         }
     }
 

@@ -10,7 +10,7 @@ public class Level {
         4：路径
         5：人物
      */
-    public int[][][] level = {
+    public static int[][][] level = {
             {
                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
