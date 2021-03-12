@@ -1,10 +1,12 @@
 package sokoban;
 
 import javax.swing.*;
+import java.applet.Applet;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,7 +49,14 @@ public class World extends JPanel {
         jf.setLocationRelativeTo(null);
         jf.setVisible(true);
     }
-
+    private void music(){
+        try {
+            File file = new File("./music/bgm1.wav");
+            Applet.newAudioClip(file.toURI().toURL()).loop();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     /**
      * 将按钮添加到Jpanel容器中，而不能添加到窗口中，否则会出现无法显示的问题
      * 需要注意的是添加按钮时需要清空默认布局：setLayout(null);
@@ -132,8 +141,6 @@ public class World extends JPanel {
                         create(new Track(),j,i);
                         create(new Hero(),j,i);
                        break;
-                    default:
-                        break;
                 }
             }
         }
@@ -289,6 +296,7 @@ public class World extends JPanel {
      */
     private void action(){
         keyListener();
+        music();
     }
 
     /**
