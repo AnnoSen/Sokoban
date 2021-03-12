@@ -92,6 +92,7 @@ public class World extends JPanel {
                     if(prop instanceof Hero){
                         hero = (Hero) prop;
                         level = hero.getLevel();
+                        System.out.println("读取成功！");
                     }
                 }
                 repaint();
